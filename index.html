@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#0a0f1e"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="FinTracker"/>
+<title>Finance Tracker</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0f1e;
+  --card:#111827;
+  --card2:#1a2235;
+  --accent:#10b981;
+  --blue:#3b82f6;
+  --danger:#ef4444;
+  --warn:#f59e0b;
+  --text:#f9fafb;
+  --muted:#6b7280;
+  --border:rgba(255,255,255,0.06);
+  --glass:rgba(17,24,39,0.85);
+  --shadow:0 8px 32px rgba(0,0,0,0.4);
+  --radius:16px;
+  --nav-h:72px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:16px;line-height:1.5;overflow:hidden}
+body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative}
+
+/* Scrollable area */
+#app{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--nav-h) + var(--safe-bottom) + 8px);scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+#app::-webkit-scrollbar{display:none}
+
+/* TABS */
+.tab{display:none;padding:16px 16px 0;animation:fadeIn .2s ease}
+.tab.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* BOTTOM NAV */
+#nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:calc(var(--nav-h) + var(--safe-bottom));background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:8px;z-index:100}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;color:var(--muted);font-size:10px;font-weight:500;font-family:inherit;cursor:pointer;padding:4px 0;transition:color .2s;position:relative}
+.nav-btn.active{color:var(--accent)}
+.nav-btn .nav-icon{font-size:22px;transition:transform .2s}
+.nav-btn.active .nav-icon{transform:scale(1.1)}
+.nav-badge{position:absolute;top:2px;right:calc(50% - 18px);background:var(--danger);color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 5px;min-width:16px;text-align:center}
+
+/* CARDS */
+.card{background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid var(--border);margin-bottom:12px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.03) 0%,transparent 60%);pointer-events:none}
+.card-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.glass-card{background:rgba(17,24,39,.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+
+/* SECTION HEADER */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-size:18px;font-weight:700}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;padding:10px 20px}
+.btn:active{transform:scale(.96)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#0ea371}
+.btn-secondary{background:var(--card2);color:var(--text)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-sm{padding:6px 14px;font-size:13px;border-radius:10px}
+.btn-icon{width:36px;height:36px;padding:0;border-radius:10px;background:var(--card2);color:var(--text)}
+
+/* FAB */
+#fab{position:fixed;bottom:calc(var(--nav-h) + var(--safe-bottom) + 16px);right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#0ea371);color:#fff;font-size:28px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(16,185,129,.4);z-index:99;transition:all .2s;display:flex;align-items:center;justify-content:center;font-weight:300}
+#fab:active{transform:scale(.92)}
+#fab.hidden{opacity:0;pointer-events:none;transform:scale(.8)}
+
+/* MODALS & BOTTOM SHEETS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(4px)}
+.overlay.show{opacity:1;pointer-events:all}
+.bottom-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:var(--card);border-radius:24px 24px 0 0;z-index:201;transition:transform .3s cubic-bezier(.4,0,.2,1);max-height:90vh;overflow-y:auto;padding:0 0 calc(24px + var(--safe-bottom))}
+.bottom-sheet.show{transform:translateX(-50%) translateY(0)}
+.sheet-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0}
+.sheet-header{padding:16px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.sheet-title{font-size:18px;font-weight:700}
+.sheet-body{padding:16px 20px 0}
+.close-btn{width:32px;height:32px;border-radius:50%;background:var(--card2);border:none;color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.close-btn:active{transform:scale(.9)}
+
+/* MODAL (centered) */
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);width:calc(100% - 48px);max-width:400px;background:var(--card);border-radius:var(--radius);z-index:201;padding:24px;opacity:0;pointer-events:none;transition:all .25s}
+.modal.show{opacity:1;pointer-events:all;transform:translate(-50%,-50%) scale(1)}
+
+/* FORMS */
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:15px;padding:11px 14px;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted)}
+.field .hint{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* PROGRESS RING */
+.ring-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+canvas.ring{display:block}
+
+/* CHIPS / TOGGLES */
+.chip-group{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;font-family:inherit}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chip:active{transform:scale(.95)}
+
+/* EXPENSE ITEM */
+.expense-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);position:relative;overflow:hidden;transition:transform .3s}
+.expense-item:last-child{border-bottom:none}
+.exp-dot{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.exp-info{flex:1;min-width:0}
+.exp-desc{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exp-cat{font-size:12px;color:var(--muted)}
+.exp-right{text-align:right;flex-shrink:0}
+.exp-amount{font-size:15px;font-weight:600}
+.exp-date{font-size:11px;color:var(--muted)}
+.exp-delete-reveal{position:absolute;right:-72px;top:0;bottom:0;width:72px;background:var(--danger);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:right .3s}
+.expense-item.swiped .exp-delete-reveal{right:0}
+.expense-item.swiped{transform:translateX(-72px)}
+
+/* DAY GROUP */
+.day-group-header{display:flex;justify-content:space-between;align-items:center;padding:8px 0 4px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+
+/* RECURRING ITEM */
+.recur-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.recur-item:last-child{border-bottom:none}
+
+/* INVESTMENT ACCOUNT */
+.account-card{background:var(--card2);border-radius:12px;padding:14px;margin-bottom:8px;border:1px solid var(--border);cursor:pointer;transition:all .2s}
+.account-card:active{transform:scale(.98)}
+.account-type-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em}
+.badge-tfsa{background:rgba(16,185,129,.2);color:var(--accent)}
+.badge-nonreg{background:rgba(59,130,246,.2);color:var(--blue)}
+.badge-crypto{background:rgba(245,158,11,.2);color:var(--warn)}
+.badge-other{background:rgba(107,114,128,.2);color:var(--muted)}
+
+/* PROGRESS BAR */
+.prog-wrap{background:rgba(255,255,255,.06);border-radius:6px;height:8px;overflow:hidden;margin-top:6px}
+.prog-bar{height:100%;border-radius:6px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* ALERT BANNERS */
+.alert{border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500;animation:slideDown .3s ease}
+@keyframes slideDown{from{transform:translateY(-8px);opacity:0}to{transform:none;opacity:1}}
+.alert-warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--warn)}
+.alert-danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--danger)}
+.alert-success{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:var(--accent)}
+
+/* SETUP WIZARD */
+#setup{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;overflow-y:auto;padding:40px 24px 40px;max-width:480px;margin:0 auto}
+#setup.hidden{display:none}
+.wizard-logo{font-size:48px;margin-bottom:16px}
+.wizard-title{font-size:28px;font-weight:700;margin-bottom:6px}
+.wizard-sub{font-size:15px;color:var(--muted);margin-bottom:32px}
+.wizard-step{display:none}
+.wizard-step.active{display:block;animation:fadeIn .25s ease}
+.step-number{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+
+/* CATEGORY DOT */
+.cat-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+
+/* SCORE BADGE */
+.score-badge{font-size:42px;font-weight:700;line-height:1}
+
+/* TFSA widget */
+.tfsa-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px}
+.tfsa-row:last-child{border-bottom:none}
+
+/* CHART CANVAS */
+canvas.chart{display:block;margin:0 auto}
+
+/* SETTINGS ROWS */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-size:15px;font-weight:500}
+.setting-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* TOGGLE SWITCH */
+.toggle-wrap{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.toggle{width:44px;height:24px;background:var(--card2);border-radius:12px;border:none;cursor:pointer;position:relative;transition:background .2s}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle.on::after{transform:translateX(20px)}
+
+/* NUMBER INPUT */
+.num-input-wrap{display:flex;align-items:center;gap:8px}
+.num-input-wrap input{text-align:right;width:120px}
+
+/* BUDGET ALLOC ROW */
+.alloc-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.alloc-label{flex:1;font-size:14px;font-weight:500}
+.alloc-input{width:80px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:7px 10px;outline:none;text-align:right}
+.alloc-input:focus{border-color:var(--accent)}
+.alloc-type{font-size:12px;color:var(--muted);width:20px}
+
+/* Empty state */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px}
+
+/* SCROLL FADE top/bottom */
+#app{-webkit-mask-image:linear-gradient(to bottom,transparent 0,black 8px,black calc(100% - 8px),transparent 100%)}
+
+/* Safe area padding at top */
+.tab{padding-top:max(16px, env(safe-area-inset-top))}
+
+/* Responsive fine-tune */
+@media(min-width:400px){.sheet-body,.sheet-header{padding-left:24px;padding-right:24px}}
+</style>
+</head>
+<body>
+
+<!-- SETUP WIZARD -->
+<div id="setup">
+  <div class="wizard-logo">💰</div>
+  <div class="wizard-title">Finance Tracker</div>
+  <div class="wizard-sub">Let's set up your personal finance dashboard in 3 quick steps.</div>
+
+  <div class="wizard-step active" id="ws1">
+    <div class="step-number">Step 1 of 3</div>
+    <h2 style="font-size:20px;margin-bottom:6px">Your Income</h2>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:20px">Enter your monthly take-home pay (after tax).</p>
+    <div class="field">
+      <label>Net Monthly Income (CAD)</label>
+      <input type="number" id="ws-income" placeholder="0.00" min="0" step="0.01"/>
+      <div class="hint" id="ws-biweekly-hint" style="color:var(--accent)"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="wizardNext(1)">Continue →</button>
+  </div>
+
+  <div class="wizard-step" id="ws2">
+    <div class="step-number">Step 2 of 3</div>
+    <h2 style="font-size:20px;margin-bottom:6px">Your TFSA Room</h2>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:20px">We'll calculate how much TFSA contribution room you have.</p>
+    <div class="field">
+      <label>Birth Year</label>
+      <input type="number" id="ws-birthyear" placeholder="e.g. 1995" min="1950" max="2008"/>
+    </div>
+    <div class="field">
+      <label>Total TFSA Contributions to Date (CAD)</label>
+      <input type="number" id="ws-tfsa" placeholder="0.00" min="0" step="0.01" value="13000"/>
+      <div class="hint">The total you've ever contributed across all TFSA accounts.</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-ghost" style="flex:1" onclick="wizardBack(2)">← Back</button>
+      <button class="btn btn-primary" style="flex:1" onclick="wizardNext(2)">Continue →</button>
+    </div>
+  </div>
+
+  <div class="wizard-step" id="ws3">
+    <div class="step-number">Step 3 of 3</div>
+    <h2 style="font-size:20px;margin-bottom:6px">Budget Allocations</h2>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:20px">Set how much of your income goes to savings and investments. The rest is your spending budget.</p>
+    <div class="field">
+      <label>Monthly Savings Allocation</label>
+      <div class="alloc-row">
+        <input class="alloc-input" type="number" id="ws-savings" placeholder="0" min="0" value="10"/>
+        <span class="alloc-type">%</span>
+        <span style="font-size:13px;color:var(--muted)" id="ws-savings-amt"></span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Monthly Investment Allocation</label>
+      <div class="alloc-row">
+        <input class="alloc-input" type="number" id="ws-invest" placeholder="0" min="0" value="10"/>
+        <span class="alloc-type">%</span>
+        <span style="font-size:13px;color:var(--muted)" id="ws-invest-amt"></span>
+      </div>
+    </div>
+    <div id="ws3-summary" style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:20px;font-size:13px;line-height:2"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" style="flex:1" onclick="wizardBack(3)">← Back</button>
+      <button class="btn btn-primary" style="flex:1" onclick="wizardFinish()">Let's Go! 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+
+  <!-- DASHBOARD -->
+  <div class="tab active" id="tab-dashboard">
+    <div class="section-header">
+      <div class="section-title">Dashboard</div>
+      <div id="dash-date" style="font-size:13px;color:var(--muted)"></div>
+    </div>
+    <div id="dash-alerts"></div>
+    <!-- Weekly Budget Ring -->
+    <div class="card" id="weekly-budget-card">
+      <div class="card-title">Weekly Budget</div>
+      <div style="display:flex;align-items:center;gap:20px">
+        <div class="ring-wrap">
+          <canvas class="ring" id="budgetRing" width="120" height="120"></canvas>
+        </div>
+        <div style="flex:1">
+          <div id="ring-remaining" style="font-size:28px;font-weight:700"></div>
+          <div style="font-size:13px;color:var(--muted)">remaining this week</div>
+          <div style="margin-top:8px;font-size:13px">
+            <span id="ring-spent" style="color:var(--text)"></span>
+            <span style="color:var(--muted)"> of </span>
+            <span id="ring-budget" style="color:var(--text)"></span>
+          </div>
+          <div id="ring-rollover" style="font-size:12px;color:var(--accent);margin-top:4px"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Monthly Income Summary -->
+    <div class="card" id="income-summary-card">
+      <div class="card-title">Monthly Overview</div>
+      <div id="income-summary-rows"></div>
+    </div>
+    <!-- Recent Expenses -->
+    <div class="card">
+      <div class="card-title">Recent Expenses</div>
+      <div id="recent-expenses-list"></div>
+    </div>
+    <!-- Investment Summary -->
+    <div class="card">
+      <div class="card-title">Investments</div>
+      <div id="dash-invest-summary"></div>
+    </div>
+    <!-- TFSA Widget -->
+    <div class="card">
+      <div class="card-title">TFSA Contribution Room</div>
+      <div id="dash-tfsa-widget"></div>
+    </div>
+    <!-- Budget Health Score -->
+    <div class="card" style="display:flex;align-items:center;gap:16px">
+      <div>
+        <div class="card-title" style="margin-bottom:4px">Budget Health</div>
+        <div id="health-score-grade" class="score-badge"></div>
+      </div>
+      <div style="flex:1">
+        <div id="health-score-desc" style="font-size:13px;color:var(--muted)"></div>
+      </div>
+    </div>
+    <!-- Charts section -->
+    <div class="card">
+      <div class="card-title">Spending by Category</div>
+      <canvas class="chart" id="donutChart" width="240" height="240"></canvas>
+      <div id="donut-legend" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Weekly Spending Trend</div>
+      <canvas class="chart" id="barChart" width="320" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Category Budgets vs. Actual</div>
+      <div id="cat-progress-bars"></div>
+    </div>
+    <div class="card" id="monthly-overview-card">
+      <div class="card-title">Monthly Summary</div>
+      <div id="monthly-summary-rows"></div>
+    </div>
+  </div>
+
+  <!-- EXPENSES -->
+  <div class="tab" id="tab-expenses">
+    <div class="section-header">
+      <div class="section-title">Expenses</div>
+    </div>
+    <div class="chip-group" style="margin-bottom:16px" id="expense-filter-chips">
+      <button class="chip active" data-filter="week" onclick="setExpenseFilter('week',this)">This Week</button>
+      <button class="chip" data-filter="month" onclick="setExpenseFilter('month',this)">This Month</button>
+      <button class="chip" data-filter="all" onclick="setExpenseFilter('all',this)">All Time</button>
+    </div>
+    <div id="expense-list-container"></div>
+  </div>
+
+  <!-- BUDGET -->
+  <div class="tab" id="tab-budget">
+    <div class="section-header">
+      <div class="section-title">Budget</div>
+    </div>
+    <!-- Allocations -->
+    <div class="card">
+      <div class="card-title">Monthly Allocations</div>
+      <div class="alloc-row">
+        <span class="alloc-label">Savings</span>
+        <input class="alloc-input" id="alloc-savings" type="number" min="0" onchange="saveAllocations()"/>
+        <span class="alloc-type" id="alloc-savings-type">%</span>
+      </div>
+      <div class="alloc-row">
+        <span class="alloc-label">Investments</span>
+        <input class="alloc-input" id="alloc-invest" type="number" min="0" onchange="saveAllocations()"/>
+        <span class="alloc-type" id="alloc-invest-type">%</span>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px" id="alloc-summary"></div>
+    </div>
+    <!-- Category Budget Limits -->
+    <div class="card">
+      <div class="card-title">Category Budgets <span style="font-size:11px;color:var(--muted)">(monthly limit)</span></div>
+      <div id="cat-budget-rows"></div>
+    </div>
+    <!-- Categories -->
+    <div class="card">
+      <div class="card-title">Categories</div>
+      <div id="categories-list"></div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px" onclick="openAddCategory()">+ Add Category</button>
+    </div>
+    <!-- Recurring Expenses -->
+    <div class="card">
+      <div class="card-title">Recurring Bills</div>
+      <div id="recurring-list"></div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px" onclick="openAddRecurring()">+ Add Recurring Bill</button>
+    </div>
+    <!-- Week Start Setting -->
+    <div class="card">
+      <div class="card-title">Week Settings</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Week Starts On</div>
+        </div>
+        <select id="week-start-sel" onchange="saveWeekStart()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;padding:6px 10px;outline:none">
+          <option value="0">Sunday</option>
+          <option value="1">Monday</option>
+          <option value="6">Saturday</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVESTMENTS -->
+  <div class="tab" id="tab-investments">
+    <div class="section-header">
+      <div class="section-title">Investments</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddAccount()">+ Account</button>
+    </div>
+    <!-- TFSA Room -->
+    <div class="card">
+      <div class="card-title">TFSA Contribution Room</div>
+      <div id="tfsa-detail"></div>
+    </div>
+    <!-- Accounts -->
+    <div id="accounts-list"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="tab" id="tab-settings">
+    <div class="section-header">
+      <div class="section-title">Settings</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Profile</div>
+      <div class="field">
+        <label>Net Monthly Income (CAD)</label>
+        <input type="number" id="set-income" min="0" step="0.01" onchange="saveSetting('monthlyIncome',this.value)"/>
+        <div class="hint" id="set-biweekly"></div>
+      </div>
+      <div class="field">
+        <label>Birth Year</label>
+        <input type="number" id="set-birthyear" min="1950" max="2008" onchange="saveSetting('birthYear',this.value)"/>
+      </div>
+      <div class="field">
+        <label>Cumulative TFSA Contributions to Date (CAD)</label>
+        <input type="number" id="set-tfsa" min="0" step="0.01" onchange="saveSetting('tfsaContrib',this.value)"/>
+        <div class="hint">Adjust this whenever you make a new contribution outside the app.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">About</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.8">
+        <div>Finance Tracker v1.0</div>
+        <div>Data stored locally on your device.</div>
+        <div>All amounts in CAD.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--danger)">Danger Zone</div>
+      <button class="btn btn-danger" style="width:100%" onclick="openResetModal()">🗑️ Clear All Data</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav id="nav">
+  <button class="nav-btn active" id="nav-dashboard" onclick="showTab('dashboard')">
+    <span class="nav-icon">🏠</span>
+    <span>Dashboard</span>
+    <span class="nav-badge" id="budget-badge" style="display:none"></span>
+  </button>
+  <button class="nav-btn" id="nav-expenses" onclick="showTab('expenses')">
+    <span class="nav-icon">💳</span>
+    <span>Expenses</span>
+  </button>
+  <button class="nav-btn" id="nav-budget" onclick="showTab('budget')">
+    <span class="nav-icon">📊</span>
+    <span>Budget</span>
+  </button>
+  <button class="nav-btn" id="nav-investments" onclick="showTab('investments')">
+    <span class="nav-icon">📈</span>
+    <span>Invest</span>
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="showTab('settings')">
+    <span class="nav-icon">⚙️</span>
+    <span>Settings</span>
+  </button>
+</nav>
+
+<!-- FAB -->
+<button id="fab" onclick="openAddExpense()">+</button>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<!-- ADD EXPENSE SHEET -->
+<div class="bottom-sheet" id="sheet-expense">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">Add Expense</div>
+    <button class="close-btn" onclick="closeAll()">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label>Amount (CAD)</label>
+      <input type="number" id="exp-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="exp-cat"></select>
+    </div>
+    <div class="field">
+      <label>Description (optional)</label>
+      <input type="text" id="exp-desc" placeholder="e.g. Groceries at Costco"/>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="exp-date"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="submitExpense()">Add Expense</button>
+  </div>
+</div>
+
+<!-- ADD CATEGORY SHEET -->
+<div class="bottom-sheet" id="sheet-category">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">New Category</div>
+    <button class="close-btn" onclick="closeAll()">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label>Category Name</label>
+      <input type="text" id="cat-name" placeholder="e.g. Coffee"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="submitCategory()">Add Category</button>
+  </div>
+</div>
+
+<!-- ADD RECURRING SHEET -->
+<div class="bottom-sheet" id="sheet-recurring">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="recur-sheet-title">Add Recurring Bill</div>
+    <button class="close-btn" onclick="closeAll()">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="recur-name" placeholder="e.g. Netflix"/>
+    </div>
+    <div class="field">
+      <label>Amount (CAD/month)</label>
+      <input type="number" id="recur-amount" placeholder="0.00" min="0" step="0.01"/>
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="recur-cat"></select>
+    </div>
+    <input type="hidden" id="recur-edit-id"/>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="submitRecurring()">Save Bill</button>
+  </div>
+</div>
+
+<!-- ADD ACCOUNT SHEET -->
+<div class="bottom-sheet" id="sheet-account">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">Add Investment Account</div>
+    <button class="close-btn" onclick="closeAll()">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label>Account Name</label>
+      <input type="text" id="acc-name" placeholder="e.g. Questrade TFSA"/>
+    </div>
+    <div class="field">
+      <label>Account Type</label>
+      <select id="acc-type" onchange="toggleCryptoField()">
+        <option value="TFSA">TFSA</option>
+        <option value="Non-Registered">Non-Registered</option>
+        <option value="Crypto">Crypto</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="field" id="acc-coin-field" style="display:none">
+      <label>Coin Name</label>
+      <input type="text" id="acc-coin" placeholder="e.g. Bitcoin, ETH, SOL"/>
+    </div>
+    <div class="field">
+      <label>Opening Balance (optional)</label>
+      <input type="number" id="acc-balance" placeholder="0.00" min="0" step="0.01"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="submitAccount()">Add Account</button>
+  </div>
+</div>
+
+<!-- LOG CONTRIBUTION SHEET -->
+<div class="bottom-sheet" id="sheet-contrib">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="contrib-sheet-title">Log Contribution</div>
+    <button class="close-btn" onclick="closeAll()">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label>Amount (CAD)</label>
+      <input type="number" id="contrib-amount" placeholder="0.00" min="0" step="0.01"/>
+    </div>
+    <div class="field">
+      <label>Note (optional)</label>
+      <input type="text" id="contrib-note" placeholder="e.g. Weekly contribution"/>
+    </div>
+    <input type="hidden" id="contrib-account-id"/>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="submitContribution()">Log Contribution</button>
+  </div>
+</div>
+
+<!-- RESET MODAL -->
+<div class="modal" id="modal-reset">
+  <div style="font-size:24px;margin-bottom:12px">⚠️</div>
+  <div style="font-size:18px;font-weight:700;margin-bottom:8px">Clear All Data?</div>
+  <div style="font-size:14px;color:var(--muted);margin-bottom:20px">This will permanently delete all your expenses, accounts, and settings. Type <strong style="color:var(--text)">RESET</strong> to confirm.</div>
+  <div class="field">
+    <input type="text" id="reset-confirm" placeholder="Type RESET here"/>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:8px">
+    <button class="btn btn-ghost" style="flex:1" onclick="closeAll()">Cancel</button>
+    <button class="btn btn-danger" style="flex:1" onclick="executeReset()">Delete Everything</button>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="modal" id="modal-confirm">
+  <div style="font-size:24px;margin-bottom:12px" id="confirm-icon">🗑️</div>
+  <div style="font-size:16px;font-weight:600;margin-bottom:8px" id="confirm-title">Delete this item?</div>
+  <div style="font-size:14px;color:var(--muted);margin-bottom:20px" id="confirm-body">This action cannot be undone.</div>
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-ghost" style="flex:1" onclick="closeAll()">Cancel</button>
+    <button class="btn btn-danger" style="flex:1" id="confirm-ok">Delete</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONSTANTS & CONFIG
+// ============================================================
+const NS = 'ft_';
+const TFSA_LIMITS = {
+  2009:5000,2010:5000,2011:5000,2012:5000,2013:5500,2014:5500,
+  2015:10000,2016:5500,2017:5500,2018:5500,2019:6000,2020:6000,
+  2021:6000,2022:6000,2023:6500,2024:7000,2025:7000,2026:7000
+};
+const CAT_COLORS = [
+  '#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6',
+  '#06b6d4','#f97316','#ec4899','#84cc16','#6b7280'
+];
+const DEFAULT_CATS = [
+  'Groceries','Rent','Eating Out','Gas','Subscriptions',
+  'Entertainment','Personal Care','Clothing','Other'
+];
+
+// ============================================================
+// STORAGE HELPERS
+// ============================================================
+function load(key, def=null){
+  try{const v=localStorage.getItem(NS+key);return v===null?def:JSON.parse(v)}
+  catch(e){return def}
+}
+function save(key,val){
+  try{localStorage.setItem(NS+key,JSON.stringify(val))}catch(e){}
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let settings = load('settings',{
+  monthlyIncome:0, birthYear:1995, tfsaContrib:13000,
+  savingsPct:10, investPct:10, weekStart:1
+});
+let categories = load('categories', DEFAULT_CATS.map((n,i)=>({id:uid(),name:n,color:CAT_COLORS[i%CAT_COLORS.length]})));
+let expenses = load('expenses',[]);
+let recurring = load('recurring',[]);
+let accounts = load('accounts',[]);
+let contributions = load('contributions',[]);
+let catBudgets = load('catBudgets',{});
+let rollover = load('rollover',0);
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function saveAll(){
+  save('settings',settings);save('categories',categories);save('expenses',expenses);
+  save('recurring',recurring);save('accounts',accounts);save('contributions',contributions);
+  save('catBudgets',catBudgets);save('rollover',rollover);
+}
+
+// ============================================================
+// FORMATTING
+// ============================================================
+function fmt(n){
+  const v=parseFloat(n)||0;
+  return '$'+(v<0?'-':'')+Math.abs(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+}
+function fmtShort(n){
+  const v=parseFloat(n)||0;
+  if(Math.abs(v)>=1000)return '$'+(v<0?'-':'')+Math.abs(v/1000).toFixed(1)+'k';
+  return fmt(v);
+}
+function today(){return new Date().toISOString().slice(0,10)}
+function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+function weekKey(date){
+  const d=new Date(date||Date.now());
+  const ws=settings.weekStart||1;
+  const day=d.getDay();
+  const diff=(day-ws+7)%7;
+  const mon=new Date(d);mon.setDate(d.getDate()-diff);
+  return mon.toISOString().slice(0,10);
+}
+function monthKey(date){
+  const d=new Date(date||Date.now());
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function currentWeekKey(){return weekKey(new Date())}
+function currentMonthKey(){return monthKey(new Date())}
+function formatDateLabel(s){
+  const d=parseDate(s);const now=new Date();
+  const td=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const yd=new Date(td);yd.setDate(td.getDate()-1);
+  if(d.getTime()===td.getTime())return'Today';
+  if(d.getTime()===yd.getTime())return'Yesterday';
+  return d.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
+}
+
+// ============================================================
+// BUDGET CALCULATIONS
+// ============================================================
+function calcBudget(){
+  const income=parseFloat(settings.monthlyIncome)||0;
+  const savingsPct=parseFloat(settings.savingsPct)||0;
+  const investPct=parseFloat(settings.investPct)||0;
+  const monthlyRecurring=recurring.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const monthlySavings=income*(savingsPct/100);
+  const monthlyInvest=income*(investPct/100);
+  const weeklyBudget=Math.max(0,(income-monthlyRecurring-monthlySavings-monthlyInvest)/4.33);
+  return{income,monthlyRecurring,monthlySavings,monthlyInvest,weeklyBudget};
+}
+
+function getWeekExpenses(wk){
+  const ws=settings.weekStart||1;
+  const startDate=new Date(wk);
+  const endDate=new Date(startDate);endDate.setDate(startDate.getDate()+6);
+  return expenses.filter(e=>{
+    const d=parseDate(e.date);
+    return d>=startDate&&d<=endDate;
+  });
+}
+
+function getMonthExpenses(mk){
+  return expenses.filter(e=>monthKey(parseDate(e.date))===mk);
+}
+
+function weekSpent(wk){
+  const exps=getWeekExpenses(wk);
+  const recurringThisWeek=0; // recurring is monthly, split to weekly
+  return exps.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+}
+
+function monthSpent(mk){
+  return getMonthExpenses(mk).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+}
+
+function contribThisMonth(accountId){
+  const mk=currentMonthKey();
+  return contributions.filter(c=>c.accountId===accountId&&monthKey(parseDate(c.date))===mk)
+    .reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
+}
+
+function contribAllTime(accountId){
+  return contributions.filter(c=>c.accountId===accountId)
+    .reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
+}
+
+function contribWeekTotal(){
+  const wk=currentWeekKey();
+  const ws=settings.weekStart||1;
+  const startDate=new Date(wk);
+  const endDate=new Date(startDate);endDate.setDate(startDate.getDate()+6);
+  return contributions.filter(c=>{
+    const d=parseDate(c.date);return d>=startDate&&d<=endDate;
+  }).reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
+}
+
+function contribMonthTotal(){
+  const mk=currentMonthKey();
+  return contributions.filter(c=>monthKey(parseDate(c.date))===mk)
+    .reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
+}
+
+// TFSA calculation
+function calcTFSA(){
+  const birthYear=parseInt(settings.birthYear)||1995;
+  const currentYear=new Date().getFullYear();
+  const firstEligibleYear=birthYear+18;
+  let totalRoom=0;
+  for(let y=firstEligibleYear;y<=currentYear;y++){
+    totalRoom+=(TFSA_LIMITS[y]||0);
+  }
+  const contrib=parseFloat(settings.tfsaContrib)||0;
+  const currentYearLimit=TFSA_LIMITS[currentYear]||0;
+  return{totalRoom,contrib,remaining:totalRoom-contrib,currentYearLimit};
+}
+
+// Budget health score
+function calcHealthScore(){
+  const mk=currentMonthKey();
+  const {income,monthlyRecurring,monthlySavings,monthlyInvest}=calcBudget();
+  const spendingBudget=Math.max(0,income-monthlyRecurring-monthlySavings-monthlyInvest);
+  const spent=monthSpent(mk)+monthlyRecurring;
+  if(spendingBudget<=0)return{grade:'N/A',pct:0,desc:'Set your income to get a score'};
+  const pct=spendingBudget>0?Math.min(200,(spent/spendingBudget)*100):100;
+  let grade,desc;
+  if(pct<=50){grade='A';desc='Excellent — well under budget!'}
+  else if(pct<=70){grade='B';desc='Good — staying on track'}
+  else if(pct<=90){grade='C';desc='Fair — watch your spending'}
+  else if(pct<=100){grade='D';desc='Caution — near your limit'}
+  else{grade='F';desc='Over budget this month'}
+  return{grade,pct,desc};
+}
+
+// ============================================================
+// TABS & NAVIGATION
+// ============================================================
+let currentTab='dashboard';
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  currentTab=name;
+  const hideFab=['budget','investments','settings'].includes(name);
+  document.getElementById('fab').classList.toggle('hidden',hideFab);
+  document.getElementById('app').scrollTop=0;
+  renderTab(name);
+}
+function renderTab(name){
+  if(name==='dashboard')renderDashboard();
+  else if(name==='expenses')renderExpenses();
+  else if(name==='budget')renderBudget();
+  else if(name==='investments')renderInvestments();
+  else if(name==='settings')renderSettings();
+}
+
+// ============================================================
+// SETUP WIZARD
+// ============================================================
+function wizardNext(step){
+  if(step===1){
+    const inc=parseFloat(document.getElementById('ws-income').value);
+    if(!inc||inc<=0){alert('Please enter your monthly income.');return;}
+    settings.monthlyIncome=inc;
+    document.getElementById('ws1').classList.remove('active');
+    document.getElementById('ws2').classList.add('active');
+  } else if(step===2){
+    const by=parseInt(document.getElementById('ws-birthyear').value);
+    const tfsa=parseFloat(document.getElementById('ws-tfsa').value)||0;
+    if(!by||by<1950||by>2008){alert('Please enter a valid birth year (1950–2008).');return;}
+    settings.birthYear=by;settings.tfsaContrib=tfsa;
+    document.getElementById('ws2').classList.remove('active');
+    document.getElementById('ws3').classList.add('active');
+    updateWs3Summary();
+  }
+}
+function wizardBack(step){
+  document.getElementById('ws'+step).classList.remove('active');
+  document.getElementById('ws'+(step-1)).classList.add('active');
+}
+function wizardFinish(){
+  const sp=parseFloat(document.getElementById('ws-savings').value)||0;
+  const ip=parseFloat(document.getElementById('ws-invest').value)||0;
+  settings.savingsPct=sp;settings.investPct=ip;
+  save('settings',settings);save('categories',categories);save('setup','done');
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('app').style.display='';
+  renderTab('dashboard');
+  if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+}
+function updateWs3Summary(){
+  const income=parseFloat(document.getElementById('ws-income')?.value)||settings.monthlyIncome||0;
+  const sp=parseFloat(document.getElementById('ws-savings').value)||0;
+  const ip=parseFloat(document.getElementById('ws-invest').value)||0;
+  const svAmt=income*(sp/100),invAmt=income*(ip/100);
+  const recurAmt=recurring.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const wkBudget=Math.max(0,(income-recurAmt-svAmt-invAmt)/4.33);
+  const el=document.getElementById('ws3-summary');
+  if(el)el.innerHTML=`
+    <div>Monthly income: <strong>${fmt(income)}</strong></div>
+    <div>Savings: <strong>${fmt(svAmt)}</strong>/mo</div>
+    <div>Investments: <strong>${fmt(invAmt)}</strong>/mo</div>
+    <div>Weekly spending budget: <strong style="color:var(--accent)">${fmt(wkBudget)}</strong>/wk</div>
+  `;
+  const sa=document.getElementById('ws-savings-amt');
+  const ia=document.getElementById('ws-invest-amt');
+  if(sa)sa.textContent=`= ${fmt(svAmt)}/mo`;
+  if(ia)ia.textContent=`= ${fmt(invAmt)}/mo`;
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard(){
+  const now=new Date();
+  document.getElementById('dash-date').textContent=now.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});
+
+  const {weeklyBudget,income,monthlyRecurring,monthlySavings,monthlyInvest}=calcBudget();
+  const wk=currentWeekKey();
+  const spent=weekSpent(wk);
+  const totalBudget=weeklyBudget+(rollover||0);
+  const remaining=totalBudget-spent;
+  const pct=totalBudget>0?Math.min(1,spent/totalBudget):0;
+
+  // Alerts
+  const alerts=document.getElementById('dash-alerts');
+  alerts.innerHTML='';
+  if(totalBudget>0){
+    if(spent>totalBudget){
+      alerts.innerHTML+=`<div class="alert alert-danger">🚨 Over budget by ${fmt(spent-totalBudget)} this week</div>`;
+      document.getElementById('budget-badge').style.display='';
+      document.getElementById('budget-badge').textContent='!';
+    } else if(pct>=0.8){
+      alerts.innerHTML+=`<div class="alert alert-warn">⚠️ ${Math.round(pct*100)}% of weekly budget used</div>`;
+      document.getElementById('budget-badge').style.display='none';
+    } else {
+      document.getElementById('budget-badge').style.display='none';
+    }
+  }
+
+  // Ring
+  const ringColor=pct>=1?'#ef4444':pct>=0.8?'#f59e0b':'#10b981';
+  drawRing('budgetRing',pct,ringColor);
+  document.getElementById('ring-remaining').textContent=fmtShort(Math.max(0,remaining));
+  document.getElementById('ring-remaining').style.color=ringColor;
+  document.getElementById('ring-spent').textContent=fmt(spent)+' spent';
+  document.getElementById('ring-budget').textContent=fmt(totalBudget);
+  document.getElementById('ring-rollover').textContent=rollover>0?`+${fmt(rollover)} rollover from last week`:'';
+
+  // Income summary
+  const rows=[
+    {label:'Net Monthly Income',val:fmt(income),color:'var(--text)'},
+    {label:'Recurring Bills',val:'-'+fmt(monthlyRecurring),color:'var(--danger)'},
+    {label:'Savings Allocation',val:'-'+fmt(monthlySavings),color:'var(--blue)'},
+    {label:'Investment Allocation',val:'-'+fmt(monthlyInvest),color:'var(--accent)'},
+    {label:'Weekly Spending Budget',val:fmt(weeklyBudget),color:'var(--accent)'},
+  ];
+  document.getElementById('income-summary-rows').innerHTML=rows.map(r=>`
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px">
+      <span style="color:var(--muted)">${r.label}</span>
+      <span style="font-weight:600;color:${r.color}">${r.val}</span>
+    </div>`).join('');
+
+  // Recent expenses
+  const recent=[...expenses].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  const rel=document.getElementById('recent-expenses-list');
+  if(!recent.length){rel.innerHTML='<div class="empty-state"><div class="icon">💳</div><p>No expenses yet</p></div>';
+  } else {
+    rel.innerHTML=recent.map(e=>{
+      const cat=categories.find(c=>c.id===e.catId)||{name:'Other',color:'#6b7280'};
+      return`<div class="expense-item" style="padding:10px 0">
+        <div class="exp-dot" style="background:${cat.color}22;color:${cat.color}">${catEmoji(cat.name)}</div>
+        <div class="exp-info"><div class="exp-desc">${e.desc||cat.name}</div><div class="exp-cat">${cat.name}</div></div>
+        <div class="exp-right"><div class="exp-amount">${fmt(e.amount)}</div><div class="exp-date">${formatDateLabel(e.date)}</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Investment summary
+  const dis=document.getElementById('dash-invest-summary');
+  if(!accounts.length){dis.innerHTML='<div style="font-size:13px;color:var(--muted)">No accounts added yet.</div>';}
+  else{
+    const weekTotal=contribWeekTotal();
+    const monthTotal=contribMonthTotal();
+    dis.innerHTML=`
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
+        <span style="color:var(--muted)">This week</span><span style="font-weight:600;color:var(--accent)">${fmt(weekTotal)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:12px">
+        <span style="color:var(--muted)">This month</span><span style="font-weight:600">${fmt(monthTotal)}</span>
+      </div>
+      ${accounts.slice(0,3).map(a=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:13px">
+          <span>${a.name}</span>
+          <span style="color:var(--muted)">${fmt(contribAllTime(a.id))}</span>
+        </div>`).join('')}
+    `;
+  }
+
+  // TFSA widget
+  const {totalRoom,contrib,remaining:tfsaRem,currentYearLimit}=calcTFSA();
+  const tw=document.getElementById('dash-tfsa-widget');
+  const tfsaColor=tfsaRem<0?'var(--danger)':'var(--accent)';
+  tw.innerHTML=`
+    <div style="font-size:28px;font-weight:700;color:${tfsaColor}">${fmt(Math.max(0,tfsaRem))}</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">contribution room remaining</div>
+    <div style="display:flex;justify-content:space-between;font-size:13px">
+      <span style="color:var(--muted)">Total room</span><span>${fmt(totalRoom)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px">
+      <span style="color:var(--muted)">Contributed</span><span>${fmt(contrib)}</span>
+    </div>
+    ${tfsaRem<0?`<div class="alert alert-danger" style="margin-top:8px;padding:8px 12px;font-size:12px">Over-contributed by ${fmt(Math.abs(tfsaRem))}</div>`:''}
+  `;
+
+  // Health score
+  const {grade,desc}=calcHealthScore();
+  const gradeColor={'A':'#10b981','B':'#10b981','C':'#f59e0b','D':'#f59e0b','F':'#ef4444','N/A':'#6b7280'}[grade]||'#6b7280';
+  document.getElementById('health-score-grade').textContent=grade;
+  document.getElementById('health-score-grade').style.color=gradeColor;
+  document.getElementById('health-score-desc').textContent=desc;
+
+  // Charts
+  renderDonutChart();
+  renderBarChart();
+  renderCatProgressBars();
+  renderMonthlySummary();
+}
+
+function catEmoji(name=''){
+  const map={groceries:'🛒',rent:'🏠','eating out':'🍽️',gas:'⛽',subscriptions:'📱',entertainment:'🎬','personal care':'🧴',clothing:'👕',other:'📦',savings:'💰',investments:'📈',crypto:'🔐',coffee:'☕',transport:'🚇',health:'💊'};
+  return map[name.toLowerCase()]||'💳';
+}
+
+// ============================================================
+// RING CHART (Canvas)
+// ============================================================
+function drawRing(id,pct,color='#10b981'){
+  const canvas=document.getElementById(id);if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,r=48,lw=10;
+  ctx.clearRect(0,0,W,H);
+  // Track
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
+  // Fill
+  const start=-Math.PI/2,end=start+(Math.PI*2*Math.min(1,pct));
+  ctx.beginPath();ctx.arc(cx,cy,r,start,end);
+  ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
+}
+
+// ============================================================
+// DONUT CHART
+// ============================================================
+function renderDonutChart(){
+  const mk=currentMonthKey();
+  const exps=getMonthExpenses(mk);
+  const canvas=document.getElementById('donutChart');
+  const legend=document.getElementById('donut-legend');
+  if(!canvas)return;
+  if(!exps.length){
+    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
+    legend.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px">No data this month</div>';
+    return;
+  }
+  // Aggregate by category
+  const totals={};
+  exps.forEach(e=>{const cid=e.catId||'other';totals[cid]=(totals[cid]||0)+(parseFloat(e.amount)||0);});
+  const items=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const total=items.reduce((s,[,v])=>s+v,0);
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,r=90,inner=54;
+  ctx.clearRect(0,0,W,H);
+  let angle=-Math.PI/2;
+  const segments=[];
+  items.forEach(([cid,val])=>{
+    const cat=categories.find(c=>c.id===cid)||{name:'Other',color:'#6b7280'};
+    const sweep=(val/total)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,angle,angle+sweep);
+    ctx.fillStyle=cat.color;ctx.fill();
+    segments.push({cid,cat,val,angle,sweep});
+    angle+=sweep;
+  });
+  // Donut hole
+  ctx.beginPath();ctx.arc(cx,cy,inner,0,Math.PI*2);
+  ctx.fillStyle='#111827';ctx.fill();
+  // Center total
+  ctx.fillStyle='#f9fafb';ctx.font='bold 14px Inter,sans-serif';ctx.textAlign='center';
+  ctx.fillText('Total',cx,cy-8);
+  ctx.font='bold 16px Inter,sans-serif';
+  ctx.fillText(fmtShort(total),cx,cy+12);
+
+  // Touch interaction
+  canvas.onclick=function(ev){
+    const rect=canvas.getBoundingClientRect();
+    const scaleX=canvas.width/rect.width,scaleY=canvas.height/rect.height;
+    const mx=(ev.clientX-rect.left)*scaleX-cx,my=(ev.clientY-rect.top)*scaleY-cy;
+    const dist=Math.sqrt(mx*mx+my*my);
+    if(dist<inner||dist>r)return;
+    let a=Math.atan2(my,mx);if(a<-Math.PI/2)a+=Math.PI*2;
+    const hit=segments.find(s=>{
+      let sa=s.angle;if(sa<-Math.PI/2)sa+=Math.PI*2;
+      return a>=sa&&a<=sa+s.sweep;
+    });
+    if(hit){
+      ctx.clearRect(0,0,W,H);
+      segments.forEach(s=>{
+        ctx.beginPath();ctx.moveTo(cx,cy);
+        ctx.arc(cx,cy,r+(s===hit?6:0),s.angle,s.angle+s.sweep);
+        ctx.fillStyle=s===hit?s.cat.color+'ee':s.cat.color+'99';ctx.fill();
+      });
+      ctx.beginPath();ctx.arc(cx,cy,inner,0,Math.PI*2);ctx.fillStyle='#111827';ctx.fill();
+      ctx.fillStyle='#f9fafb';ctx.textAlign='center';
+      ctx.font='bold 13px Inter,sans-serif';ctx.fillText(hit.cat.name,cx,cy-8);
+      ctx.font='bold 15px Inter,sans-serif';ctx.fillText(fmt(hit.val),cx,cy+12);
+    }
+  };
+
+  // Legend
+  legend.innerHTML=items.slice(0,6).map(([cid,val])=>{
+    const cat=categories.find(c=>c.id===cid)||{name:'Other',color:'#6b7280'};
+    const pct=Math.round(val/total*100);
+    return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px">
+      <span style="width:10px;height:10px;border-radius:50%;background:${cat.color};display:inline-block;flex-shrink:0"></span>
+      <span style="flex:1;color:var(--muted)">${cat.name}</span>
+      <span style="font-weight:600">${fmt(val)}</span>
+      <span style="color:var(--muted);width:32px;text-align:right">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// BAR CHART (8-week trend)
+// ============================================================
+function renderBarChart(){
+  const canvas=document.getElementById('barChart');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const {weeklyBudget}=calcBudget();
+  // Get last 8 weeks
+  const weeks=[];
+  let d=new Date();
+  const ws=settings.weekStart||1;
+  // align to current week start
+  const day=d.getDay();const diff=(day-ws+7)%7;
+  d.setDate(d.getDate()-diff);
+  for(let i=7;i>=0;i--){
+    const w=new Date(d);w.setDate(d.getDate()-(i*7));
+    const wk=w.toISOString().slice(0,10);
+    weeks.push({wk,spent:weekSpent(wk)});
+  }
+  const maxVal=Math.max(weeklyBudget*1.2,...weeks.map(w=>w.spent),1);
+  const padL=8,padR=8,padT=16,padB=28;
+  const bw=(W-padL-padR)/weeks.length;
+  const bGap=4;
+  // Budget line
+  const budgetY=padT+(1-(weeklyBudget/maxVal))*(H-padT-padB);
+  ctx.beginPath();ctx.setLineDash([6,4]);
+  ctx.moveTo(padL,budgetY);ctx.lineTo(W-padR,budgetY);
+  ctx.strokeStyle='rgba(245,158,11,.5)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.setLineDash([]);
+  // Budget label
+  ctx.fillStyle='#f59e0b';ctx.font='10px Inter,sans-serif';ctx.textAlign='right';
+  ctx.fillText(fmtShort(weeklyBudget),W-padR-2,budgetY-4);
+
+  weeks.forEach(({wk,spent},i)=>{
+    const x=padL+i*bw+bGap/2;
+    const bwFinal=bw-bGap;
+    const bh=Math.max(2,(spent/maxVal)*(H-padT-padB));
+    const y=padT+(H-padT-padB)-bh;
+    const color=spent>weeklyBudget?'#ef4444':'#10b981';
+    // Bar
+    ctx.beginPath();
+    const rad=4;
+    ctx.moveTo(x+rad,y);ctx.lineTo(x+bwFinal-rad,y);
+    ctx.quadraticCurveTo(x+bwFinal,y,x+bwFinal,y+rad);
+    ctx.lineTo(x+bwFinal,y+bh);ctx.lineTo(x,y+bh);ctx.lineTo(x,y+rad);
+    ctx.quadraticCurveTo(x,y,x+rad,y);
+    ctx.fillStyle=color+'bb';ctx.fill();
+    // Amount label on top
+    if(spent>0){
+      ctx.fillStyle='#f9fafb';ctx.font='9px Inter,sans-serif';ctx.textAlign='center';
+      ctx.fillText(fmtShort(spent),x+bwFinal/2,y-3);
+    }
+    // Week label
+    ctx.fillStyle='#6b7280';ctx.font='9px Inter,sans-serif';ctx.textAlign='center';
+    const wd=parseDate(wk);
+    const label=`${wd.getMonth()+1}/${wd.getDate()}`;
+    ctx.fillText(i===weeks.length-1?'Now':label,x+bwFinal/2,H-4);
+  });
+}
+
+// ============================================================
+// CATEGORY PROGRESS BARS (dashboard)
+// ============================================================
+function renderCatProgressBars(){
+  const mk=currentMonthKey();
+  const exps=getMonthExpenses(mk);
+  const el=document.getElementById('cat-progress-bars');
+  if(!el)return;
+  const totals={};
+  exps.forEach(e=>{totals[e.catId]=(totals[e.catId]||0)+(parseFloat(e.amount)||0);});
+  const items=Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(!items.length){el.innerHTML='<div style="font-size:13px;color:var(--muted)">No expenses this month</div>';return;}
+  el.innerHTML=items.map(([cid,spent])=>{
+    const cat=categories.find(c=>c.id===cid)||{name:'Other',color:'#6b7280'};
+    const budget=catBudgets[cid]||0;
+    const pct=budget>0?Math.min(1,spent/budget):0;
+    const color=pct>=1?'var(--danger)':pct>=0.8?'var(--warn)':'var(--accent)';
+    return`<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span style="display:flex;align-items:center;gap:6px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${cat.color};display:inline-block"></span>
+          ${cat.name}
+        </span>
+        <span style="color:var(--muted)">${fmt(spent)}${budget?` / ${fmt(budget)}`:''}</span>
+      </div>
+      ${budget?`<div class="prog-wrap"><div class="prog-bar" style="width:${pct*100}%;background:${color}"></div></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// MONTHLY SUMMARY
+// ============================================================
+function renderMonthlySummary(){
+  const mk=currentMonthKey();
+  const {income,monthlyRecurring,monthlySavings,monthlyInvest}=calcBudget();
+  const spent=monthSpent(mk)+monthlyRecurring;
+  const invested=contribMonthTotal();
+  const net=income-spent-monthlySavings-invested;
+  const el=document.getElementById('monthly-summary-rows');
+  if(!el)return;
+  const rows=[
+    {label:'Income',val:fmt(income),color:'var(--accent)'},
+    {label:'Total Spent',val:fmt(spent),color:'var(--danger)'},
+    {label:'Saved',val:fmt(monthlySavings),color:'var(--blue)'},
+    {label:'Invested',val:fmt(invested),color:'var(--accent)'},
+    {label:'Net Surplus/Deficit',val:(net>=0?'+':'')+fmt(net),color:net>=0?'var(--accent)':'var(--danger)'},
+  ];
+  el.innerHTML=rows.map(r=>`
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:14px">
+      <span style="color:var(--muted)">${r.label}</span>
+      <span style="font-weight:600;color:${r.color}">${r.val}</span>
+    </div>`).join('');
+}
+
+// ============================================================
+// EXPENSES TAB
+// ============================================================
+let expenseFilter='week';
+function setExpenseFilter(f,el){
+  expenseFilter=f;
+  document.querySelectorAll('#expense-filter-chips .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderExpenses();
+}
+
+function renderExpenses(){
+  const container=document.getElementById('expense-list-container');
+  let filtered;
+  if(expenseFilter==='week'){
+    filtered=getWeekExpenses(currentWeekKey());
+  } else if(expenseFilter==='month'){
+    filtered=getMonthExpenses(currentMonthKey());
+  } else {
+    filtered=[...expenses];
+  }
+  filtered.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(!filtered.length){
+    container.innerHTML='<div class="empty-state"><div class="icon">💳</div><p>No expenses for this period</p></div>';
+    return;
+  }
+  // Group by date
+  const groups={};
+  filtered.forEach(e=>{groups[e.date]=(groups[e.date]||[]).concat(e);});
+  const sortedDates=Object.keys(groups).sort((a,b)=>new Date(b)-new Date(a));
+  container.innerHTML=sortedDates.map(date=>{
+    const dayExps=groups[date];
+    const dayTotal=dayExps.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+    return`<div>
+      <div class="day-group-header"><span>${formatDateLabel(date)}</span><span>${fmt(dayTotal)}</span></div>
+      <div class="card" style="padding:4px 16px;margin-bottom:8px">
+        ${dayExps.map(e=>renderExpenseItem(e)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Swipe-to-delete
+  initSwipe();
+}
+
+function renderExpenseItem(e){
+  const cat=categories.find(c=>c.id===e.catId)||{name:'Other',color:'#6b7280'};
+  return`<div class="expense-item" data-id="${e.id}" ontouchstart="handleTouchStart(event,this)" ontouchmove="handleTouchMove(event,this)" ontouchend="handleTouchEnd(event,this)">
+    <div class="exp-dot" style="background:${cat.color}22;color:${cat.color}">${catEmoji(cat.name)}</div>
+    <div class="exp-info"><div class="exp-desc">${e.desc||cat.name}</div><div class="exp-cat">${cat.name}${e.recurring?' · Recurring':''}</div></div>
+    <div class="exp-right"><div class="exp-amount">${fmt(e.amount)}</div></div>
+    <div class="exp-delete-reveal" onclick="deleteExpense('${e.id}')">🗑️</div>
+  </div>`;
+}
+
+// Touch swipe
+let touchStartX=0;
+function handleTouchStart(ev,el){touchStartX=ev.touches[0].clientX;el.classList.remove('swiped');}
+function handleTouchMove(ev,el){
+  const dx=ev.touches[0].clientX-touchStartX;
+  if(dx<-30){el.classList.add('swiped');}
+  else if(dx>10){el.classList.remove('swiped');}
+}
+function handleTouchEnd(ev,el){}
+function initSwipe(){}
+
+function deleteExpense(id){
+  confirm(`Delete this expense?`)&&(expenses=expenses.filter(e=>e.id!==id),saveAll(),renderExpenses(),renderDashboard());
+}
+
+// ============================================================
+// ADD EXPENSE
+// ============================================================
+function openAddExpense(){
+  populateCatSelect('exp-cat');
+  document.getElementById('exp-amount').value='';
+  document.getElementById('exp-desc').value='';
+  document.getElementById('exp-date').value=today();
+  openSheet('sheet-expense');
+}
+
+function submitExpense(){
+  const amount=parseFloat(document.getElementById('exp-amount').value);
+  const catId=document.getElementById('exp-cat').value;
+  const desc=document.getElementById('exp-desc').value.trim();
+  const date=document.getElementById('exp-date').value||today();
+  if(!amount||amount<=0){alert('Please enter a valid amount.');return;}
+  if(!catId){alert('Please select a category.');return;}
+  expenses.push({id:uid(),amount,catId,desc,date});
+  saveAll();closeAll();
+  checkWeekRollover();
+  renderTab(currentTab);
+}
+
+// ============================================================
+// BUDGET TAB
+// ============================================================
+function renderBudget(){
+  // Allocations
+  document.getElementById('alloc-savings').value=settings.savingsPct||0;
+  document.getElementById('alloc-invest').value=settings.investPct||0;
+  updateAllocSummary();
+  // Category budgets
+  renderCatBudgetRows();
+  // Categories list
+  renderCategoriesList();
+  // Recurring
+  renderRecurringList();
+  // Week start
+  document.getElementById('week-start-sel').value=settings.weekStart||1;
+}
+
+function saveAllocations(){
+  settings.savingsPct=parseFloat(document.getElementById('alloc-savings').value)||0;
+  settings.investPct=parseFloat(document.getElementById('alloc-invest').value)||0;
+  saveAll();updateAllocSummary();
+}
+
+function updateAllocSummary(){
+  const {income,monthlyRecurring,monthlySavings,monthlyInvest,weeklyBudget}=calcBudget();
+  document.getElementById('alloc-summary').innerHTML=
+    `Monthly: savings ${fmt(monthlySavings)} · invest ${fmt(monthlyInvest)} · weekly budget: <strong style="color:var(--accent)">${fmt(weeklyBudget)}</strong>`;
+}
+
+function renderCatBudgetRows(){
+  const el=document.getElementById('cat-budget-rows');
+  el.innerHTML=categories.map(cat=>`
+    <div class="alloc-row">
+      <span style="display:flex;align-items:center;gap:8px;flex:1;font-size:14px">
+        <span style="width:10px;height:10px;border-radius:50%;background:${cat.color};display:inline-block"></span>
+        ${cat.name}
+      </span>
+      <input class="alloc-input" type="number" min="0" step="0.01" value="${catBudgets[cat.id]||''}" placeholder="—"
+        onchange="catBudgets['${cat.id}']=parseFloat(this.value)||0;saveAll()"/>
+      <span style="font-size:12px;color:var(--muted)">$/mo</span>
+    </div>`).join('');
+}
+
+function renderCategoriesList(){
+  const el=document.getElementById('categories-list');
+  el.innerHTML=categories.map(cat=>`
+    <div class="recur-item">
+      <span style="width:28px;height:28px;border-radius:8px;background:${cat.color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${catEmoji(cat.name)}</span>
+      <span style="flex:1;font-size:14px;font-weight:500">${cat.name}</span>
+      <span style="width:10px;height:10px;border-radius:50%;background:${cat.color};display:inline-block;margin-right:8px"></span>
+      <button class="btn-icon" style="background:transparent;color:var(--danger);font-size:16px" onclick="deleteCategory('${cat.id}')">🗑️</button>
+    </div>`).join('');
+}
+
+function renderRecurringList(){
+  const el=document.getElementById('recurring-list');
+  if(!recurring.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 0">No recurring bills added yet.</div>';return;}
+  el.innerHTML=recurring.map(r=>{
+    const cat=categories.find(c=>c.id===r.catId)||{name:'Other',color:'#6b7280'};
+    return`<div class="recur-item">
+      <span style="width:28px;height:28px;border-radius:8px;background:${cat.color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${catEmoji(cat.name)}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:500">${r.name}</div>
+        <div style="font-size:12px;color:var(--muted)">${cat.name}</div>
+      </div>
+      <span style="font-size:14px;font-weight:600;margin-right:10px">${fmt(r.amount)}/mo</span>
+      <button class="btn-icon" style="background:transparent;color:var(--muted);font-size:16px;margin-right:4px" onclick="editRecurring('${r.id}')">✏️</button>
+      <button class="btn-icon" style="background:transparent;color:var(--danger);font-size:16px" onclick="deleteRecurring('${r.id}')">🗑️</button>
+    </div>`;
+  }).join('');
+}
+
+function openAddCategory(){
+  document.getElementById('cat-name').value='';
+  openSheet('sheet-category');
+}
+function submitCategory(){
+  const name=document.getElementById('cat-name').value.trim();
+  if(!name)return;
+  categories.push({id:uid(),name,color:CAT_COLORS[categories.length%CAT_COLORS.length]});
+  saveAll();closeAll();renderBudget();
+}
+function deleteCategory(id){
+  const inUse=expenses.some(e=>e.catId===id)||recurring.some(r=>r.catId===id);
+  if(inUse&&!confirm('This category is in use. Delete anyway?'))return;
+  categories=categories.filter(c=>c.id!==id);
+  saveAll();renderBudget();
+}
+
+function openAddRecurring(){
+  document.getElementById('recur-name').value='';
+  document.getElementById('recur-amount').value='';
+  document.getElementById('recur-edit-id').value='';
+  document.getElementById('recur-sheet-title').textContent='Add Recurring Bill';
+  populateCatSelect('recur-cat');
+  openSheet('sheet-recurring');
+}
+function editRecurring(id){
+  const r=recurring.find(x=>x.id===id);if(!r)return;
+  document.getElementById('recur-name').value=r.name;
+  document.getElementById('recur-amount').value=r.amount;
+  document.getElementById('recur-edit-id').value=id;
+  document.getElementById('recur-sheet-title').textContent='Edit Recurring Bill';
+  populateCatSelect('recur-cat',r.catId);
+  openSheet('sheet-recurring');
+}
+function submitRecurring(){
+  const name=document.getElementById('recur-name').value.trim();
+  const amount=parseFloat(document.getElementById('recur-amount').value);
+  const catId=document.getElementById('recur-cat').value;
+  const editId=document.getElementById('recur-edit-id').value;
+  if(!name||!amount||amount<=0||!catId){alert('Please fill in all fields.');return;}
+  if(editId){
+    const i=recurring.findIndex(r=>r.id===editId);
+    if(i>=0)recurring[i]={...recurring[i],name,amount,catId};
+  } else {
+    recurring.push({id:uid(),name,amount,catId});
+  }
+  saveAll();closeAll();renderBudget();
+}
+function deleteRecurring(id){
+  if(!confirm('Delete this recurring bill?'))return;
+  recurring=recurring.filter(r=>r.id!==id);saveAll();renderBudget();
+}
+
+function saveWeekStart(){
+  settings.weekStart=parseInt(document.getElementById('week-start-sel').value);
+  saveAll();
+}
+
+// ============================================================
+// INVESTMENTS TAB
+// ============================================================
+function renderInvestments(){
+  // TFSA detail
+  const {totalRoom,contrib,remaining,currentYearLimit}=calcTFSA();
+  const el=document.getElementById('tfsa-detail');
+  const remColor=remaining<0?'var(--danger)':'var(--accent)';
+  el.innerHTML=`
+    <div class="tfsa-row"><span>Lifetime Room Accumulated</span><span style="font-weight:600">${fmt(totalRoom)}</span></div>
+    <div class="tfsa-row"><span>Total Contributed to Date</span><span style="font-weight:600">${fmt(contrib)}</span></div>
+    <div class="tfsa-row"><span style="font-weight:600">Remaining Room</span><span style="font-weight:700;color:${remColor}">${fmt(Math.max(0,remaining))}</span></div>
+    <div class="tfsa-row"><span>${new Date().getFullYear()} Annual Limit</span><span>${fmt(currentYearLimit)}</span></div>
+    ${remaining<0?`<div class="alert alert-danger" style="margin-top:8px;padding:8px 12px;font-size:13px">⚠️ Over-contributed by ${fmt(Math.abs(remaining))}</div>`:''}
+    <div style="font-size:12px;color:var(--muted);margin-top:8px">TFSA room resets and accumulates each January 1st</div>
+  `;
+
+  // Accounts
+  const container=document.getElementById('accounts-list');
+  if(!accounts.length){
+    container.innerHTML='<div class="empty-state"><div class="icon">📈</div><p>No investment accounts yet.<br>Tap "+ Account" to add one.</p></div>';
+    return;
+  }
+  container.innerHTML=accounts.map(a=>{
+    const monthC=contribThisMonth(a.id);
+    const allC=contribAllTime(a.id);
+    const badgeClass={'TFSA':'badge-tfsa','Non-Registered':'badge-nonreg','Crypto':'badge-crypto','Other':'badge-other'}[a.type]||'badge-other';
+    return`<div class="account-card" onclick="openLogContrib('${a.id}')">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px">${a.name}</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="account-type-badge ${badgeClass}">${a.type}</span>
+            ${a.coinName?`<span style="font-size:11px;color:var(--warn)">· ${a.coinName}</span>`:''}
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openLogContrib('${a.id}')">+ Contribute</button>
+      </div>
+      <div style="display:flex;gap:16px;font-size:13px">
+        <div><div style="color:var(--muted);margin-bottom:2px">This Month</div><div style="font-weight:600;color:var(--accent)">${fmt(monthC)}</div></div>
+        <div><div style="color:var(--muted);margin-bottom:2px">All Time</div><div style="font-weight:600">${fmt(allC)}</div></div>
+        ${a.openingBalance?`<div><div style="color:var(--muted);margin-bottom:2px">Opened</div><div style="font-weight:600">${fmt(a.openingBalance)}</div></div>`:''}
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:10px;color:var(--danger);border-color:rgba(239,68,68,.3)" onclick="event.stopPropagation();deleteAccount('${a.id}')">Delete Account</button>
+    </div>`;
+  }).join('');
+}
+
+function openAddAccount(){
+  document.getElementById('acc-name').value='';
+  document.getElementById('acc-type').value='TFSA';
+  document.getElementById('acc-coin').value='';
+  document.getElementById('acc-balance').value='';
+  document.getElementById('acc-coin-field').style.display='none';
+  openSheet('sheet-account');
+}
+function toggleCryptoField(){
+  document.getElementById('acc-coin-field').style.display=
+    document.getElementById('acc-type').value==='Crypto'?'':'none';
+}
+function submitAccount(){
+  const name=document.getElementById('acc-name').value.trim();
+  const type=document.getElementById('acc-type').value;
+  const coinName=document.getElementById('acc-coin').value.trim();
+  const openingBalance=parseFloat(document.getElementById('acc-balance').value)||0;
+  if(!name){alert('Please enter an account name.');return;}
+  accounts.push({id:uid(),name,type,coinName,openingBalance});
+  saveAll();closeAll();renderInvestments();
+}
+function deleteAccount(id){
+  if(!confirm('Delete this account and all its contributions?'))return;
+  accounts=accounts.filter(a=>a.id!==id);
+  contributions=contributions.filter(c=>c.accountId!==id);
+  saveAll();renderInvestments();
+}
+
+function openLogContrib(accountId){
+  const acc=accounts.find(a=>a.id===accountId);
+  if(!acc)return;
+  document.getElementById('contrib-sheet-title').textContent='Contribute to '+acc.name;
+  document.getElementById('contrib-amount').value='';
+  document.getElementById('contrib-note').value='';
+  document.getElementById('contrib-account-id').value=accountId;
+  openSheet('sheet-contrib');
+}
+function submitContribution(){
+  const amount=parseFloat(document.getElementById('contrib-amount').value);
+  const note=document.getElementById('contrib-note').value.trim();
+  const accountId=document.getElementById('contrib-account-id').value;
+  if(!amount||amount<=0){alert('Please enter a valid amount.');return;}
+  const acc=accounts.find(a=>a.id===accountId);
+  contributions.push({id:uid(),accountId,amount,note,date:today()});
+  // If TFSA, update contributions setting
+  if(acc&&acc.type==='TFSA'){
+    settings.tfsaContrib=(parseFloat(settings.tfsaContrib)||0)+amount;
+  }
+  saveAll();closeAll();renderInvestments();
+  if(currentTab==='dashboard')renderDashboard();
+}
+
+// ============================================================
+// SETTINGS TAB
+// ============================================================
+function renderSettings(){
+  document.getElementById('set-income').value=settings.monthlyIncome||'';
+  document.getElementById('set-birthyear').value=settings.birthYear||'';
+  document.getElementById('set-tfsa').value=settings.tfsaContrib||0;
+  updateBiweeklyHint();
+}
+function saveSetting(key,val){
+  settings[key]=parseFloat(val)||val;
+  saveAll();updateBiweeklyHint();
+}
+function updateBiweeklyHint(){
+  const monthly=parseFloat(settings.monthlyIncome)||0;
+  const biweekly=monthly/12*26;
+  const el=document.getElementById('set-biweekly');
+  if(el)el.textContent=monthly>0?`≈ ${fmt(biweekly)} per bi-weekly pay cheque`:'';
+}
+
+function openResetModal(){
+  document.getElementById('reset-confirm').value='';
+  openModal('modal-reset');
+}
+function executeReset(){
+  if(document.getElementById('reset-confirm').value.trim()!=='RESET'){
+    alert('Please type RESET to confirm.');return;
+  }
+  Object.keys(localStorage).filter(k=>k.startsWith(NS)).forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
+
+// ============================================================
+// SHEET / MODAL HELPERS
+// ============================================================
+function openSheet(id){
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById(id).classList.add('show');
+}
+function openModal(id){
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById(id).classList.add('show');
+}
+function closeAll(){
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.bottom-sheet,.modal').forEach(el=>el.classList.remove('show'));
+  // Un-swipe expense items
+  document.querySelectorAll('.expense-item.swiped').forEach(el=>el.classList.remove('swiped'));
+}
+
+function populateCatSelect(selectId,selectedId=''){
+  const sel=document.getElementById(selectId);
+  sel.innerHTML=categories.map(c=>`<option value="${c.id}"${c.id===selectedId?' selected':''}>${c.name}</option>`).join('');
+}
+
+// ============================================================
+// WEEK ROLLOVER
+// ============================================================
+function checkWeekRollover(){
+  const lastWk=load('lastWeekKey','');
+  const curWk=currentWeekKey();
+  if(lastWk&&lastWk!==curWk){
+    const {weeklyBudget}=calcBudget();
+    const prevSpent=weekSpent(lastWk);
+    const surplus=weeklyBudget-prevSpent;
+    rollover=surplus>0?surplus:0;
+    save('rollover',rollover);
+  }
+  save('lastWeekKey',curWk);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init(){
+  const setupDone=load('setup');
+  checkWeekRollover();
+  if(!setupDone||!settings.monthlyIncome){
+    // Show wizard
+    const inc=document.getElementById('ws-income');
+    inc.addEventListener('input',()=>{
+      const v=parseFloat(inc.value)||0;
+      const bw=v/12*26;
+      document.getElementById('ws-biweekly-hint').textContent=v>0?`≈ ${fmt(bw)} per bi-weekly pay cheque`:'';
+    });
+    document.getElementById('ws-savings').addEventListener('input',updateWs3Summary);
+    document.getElementById('ws-invest').addEventListener('input',updateWs3Summary);
+  } else {
+    document.getElementById('setup').classList.add('hidden');
+    document.getElementById('app').style.display='';
+    renderTab('dashboard');
+    if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+  }
+}
+
+init();
+</script>
+</body>
+</html>
